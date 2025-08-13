@@ -1,21 +1,15 @@
 <html>
   <head>
-    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
-    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval'">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.2/min/dropzone.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.2/dropzone.min.css">
-    <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script> -->
-    <!--
-    <script id="mindar-module" src="../../dist-dev/mindar-image.js"  type="module"></script>
-    -->
+    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image.prod.js"></script>
 
     <script type="module">
-			import { Compiler } from "../../src/image-target/compiler.js";
+      // Import from CDN instead of local source
+      import { Compiler } from 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image.prod.js';
 
       Dropzone.autoDiscover = false;
-      //document.getElementById('mindar-module').onload=()=>{
+      
       const compiler = new Compiler();
 
       const download = (buffer) => {
@@ -142,7 +136,6 @@
           }
         });
       });
-    //};
     </script>
 
     <style>
