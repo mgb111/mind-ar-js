@@ -1,33 +1,29 @@
 <html>
   <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.2/min/dropzone.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.2/dropzone.min.css">
+    <script src="./assets/dropzone/dropzone.min.js"></script>
+    <link rel="stylesheet" href="./assets/dropzone/dropzone.min.css">
     <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image.prod.js"></script>
 
-    <script type="module">
-      // Import from CDN instead of local source
-      import { Compiler } from 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image.prod.js';
-
-      Dropzone.autoDiscover = false;
-      
+    <script>
+      const { Compiler } = window.MINDAR.IMAGE;
       const compiler = new Compiler();
 
+      // Helper to download .mind files
       const download = (buffer) => {
-        var blob = new Blob([buffer]);
-        var aLink = window.document.createElement('a');
-        aLink.download = 'targets.mind';
-        aLink.href = window.URL.createObjectURL(blob);
-        aLink.click();
-        window.URL.revokeObjectURL(aLink.href);
-      }
+        const a = document.createElement("a");
+        a.download = "targets.mind";
+        a.href = URL.createObjectURL(new Blob([buffer]));
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
 
       const showData = (data) => {
         console.log("data", data);
         for (let i = 0; i < data.trackingImageList.length; i++) {
           const image = data.trackingImageList[i];
-	  const points = data.trackingData[i].points.map((p) => {
-	    return {x: Math.round(p.x), y: Math.round(p.y)};
-	  });
+          const points = data.trackingData[i].points.map((p) => {
+            return {x: Math.round(p.x), y: Math.round(p.y)};
+          });
           showImage(image, points);
         }
 
@@ -40,8 +36,7 @@
           }
           showImage(image, points2);
         }
-      }
-
+      };
 
       const showImage = (targetImage, points) => {
         const container = document.getElementById("container");
@@ -77,64 +72,42 @@
           }
         }
         ctx.putImageData(imageData, 0, 0);
-      }
+      };
 
-      const loadImage = async (file) => {
+      // Visualization and utility functions
+      const loadImage = (file) => new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
         const img = new Image();
-
-        return new Promise((resolve, reject) => {
-          let img = new Image()
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = URL.createObjectURL(file);
-          //img.src = src
-        })
-      }
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+        img.src = url;
+      });
 
       const compileFiles = async (files) => {
-        const images = [];
-        for (let i = 0; i < files.length; i++) {
-          images.push(await loadImage(files[i]));
-        }
-        let _start = new Date().getTime();
-	const dataList = await compiler.compileImageTargets(images, (progress) => {
-	  document.getElementById("progress").innerHTML = 'progress: ' + progress.toFixed(2) + "%";
-	});
-        console.log('exec time compile: ', new Date().getTime() - _start);
-        for (let i = 0; i < dataList.length; i++) {
-          showData(dataList[i]);
-        }
-        const exportedBuffer = await compiler.exportData();
-        document.getElementById("downloadButton").addEventListener("click", function() {
-          download(exportedBuffer);
-        });
-      }
+        const images = await Promise.all(files.map(loadImage));
+        const dataList = await compiler.compileImageTargets(images, p =>
+          document.getElementById("progress").textContent = `progress: ${(p*100).toFixed(2)}%`
+        );
+        dataList.forEach(showData);
+
+        const exported = await compiler.exportData();
+        document.getElementById("downloadButton").onclick = () => download(exported);
+      };
 
       const loadMindFile = async (file) => {
-        var reader = new FileReader();
-        reader.onload = function() {
-          const dataList = compiler.importData(this.result);
-          for (let i = 0; i < dataList.length; i++) {
-            showData(dataList[i]);
-          }
-        }
-        reader.readAsArrayBuffer(file);
-      }
+        const buffer = await file.arrayBuffer();
+        const dataList = compiler.importData(buffer);
+        dataList.forEach(showData);
+      };
 
-      document.addEventListener('DOMContentLoaded', function(event) {
-        const myDropzone = new Dropzone("#dropzone", { url: "#", autoProcessQueue: false, addRemoveLinks: true });
-        myDropzone.on("addedfile", function(file) {});
-
-        document.getElementById("startButton").addEventListener("click", function() {
-          const files = myDropzone.files;
-          if (files.length === 0) return;
-          const ext = files[0].name.split('.').pop();
-          if (ext === 'mind') {
-            loadMindFile(files[0]); 
-          } else {
-            compileFiles(files);
-          }
-        });
+      document.addEventListener("DOMContentLoaded", () => {
+        Dropzone.autoDiscover = false;
+        const dz = new Dropzone("#dropzone", {url: "#", autoProcessQueue: false, addRemoveLinks: true});
+        document.getElementById("startButton").onclick = () => {
+          if (!dz.files.length) return;
+          const ext = dz.files[0].name.split(".").pop().toLowerCase();
+          ext === "mind" ? loadMindFile(dz.files[0]) : compileFiles(dz.files);
+        };
       });
     </script>
 
