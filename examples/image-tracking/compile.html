@@ -13,8 +13,10 @@
     <script type="module">
         import { Compiler } from "../../src/image-target/compiler.js";
 
-        // Disable Dropzone auto-discovery
-        Dropzone.autoDiscover = false;
+        // Disable Dropzone auto-discovery BEFORE any Dropzone code runs
+        if (typeof Dropzone !== 'undefined') {
+            Dropzone.autoDiscover = false;
+        }
 
         // Initialize the MindAR compiler
         const compiler = new Compiler();
@@ -210,13 +212,20 @@
 
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Dropzone
+            // Ensure Dropzone auto-discovery is disabled
+            if (typeof Dropzone !== 'undefined') {
+                Dropzone.autoDiscover = false;
+            }
+            
+            // Initialize Dropzone with proper configuration
             const myDropzone = new Dropzone("#dropzone", { 
                 url: "#", 
                 autoProcessQueue: false, 
                 addRemoveLinks: true,
                 acceptedFiles: "image/*,.mind",
-                maxFiles: 10
+                maxFiles: 10,
+                createImageThumbnails: false,
+                maxThumbnailFilesize: 0
             });
 
             // Handle file additions
