@@ -9,17 +9,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.2/min/dropzone.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.2/dropzone.min.css">
     
-    <!-- MindAR Compiler -->
+    <!-- MindAR Libraries from built files -->
     <script type="module">
-        import { Compiler } from "../../src/image-target/compiler.js";
-
-        // Disable Dropzone auto-discovery BEFORE any Dropzone code runs
+        import { Compiler } from "../../dist-dev/mindar-image.js";
+        
+        // Make compiler available globally for debugging
+        window.MINDAR_COMPILER = Compiler;
+    </script>
+    
+    <script>
+        // Disable Dropzone auto-discovery immediately
         if (typeof Dropzone !== 'undefined') {
             Dropzone.autoDiscover = false;
         }
 
         // Initialize the MindAR compiler
-        const compiler = new Compiler();
+        let compiler = null;
         let compiledData = null;
 
         // Download function for compiled .mind files
@@ -146,6 +151,14 @@
                 document.getElementById('progress').innerHTML = 'Loading images...';
                 document.getElementById('startButton').disabled = true;
                 
+                // Wait for compiler to be available
+                while (!window.MINDAR_COMPILER) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // Initialize compiler
+                compiler = new window.MINDAR_COMPILER();
+                
                 // Load all images
                 const images = [];
                 for (let i = 0; i < files.length; i++) {
@@ -185,6 +198,16 @@
         const loadMindFile = async (file) => {
             try {
                 document.getElementById('progress').innerHTML = 'Loading .mind file...';
+                
+                // Wait for compiler to be available
+                while (!window.MINDAR_COMPILER) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // Initialize compiler
+                if (!compiler) {
+                    compiler = new window.MINDAR_COMPILER();
+                }
                 
                 const reader = new FileReader();
                 reader.onload = function() {
